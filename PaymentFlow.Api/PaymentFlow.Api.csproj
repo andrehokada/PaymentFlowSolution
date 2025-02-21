@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>b42975ce-84d4-4da5-bbde-9828bcef81a2</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="9.23.60" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PaymentFlow.Application\PaymentFlow.Application.csproj" />
+    <ProjectReference Include="..\PaymentFlow.Domain\PaymentFlow.Domain.csproj" />
+    <ProjectReference Include="..\PaymentFlow.Infrastructure\PaymentFlow.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
