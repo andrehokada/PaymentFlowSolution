@@ -1,39 +1,22 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using PaymentFlow.Application.Services;
-using PaymentFlow.Domain.Repositories;
-using PaymentFlow.Domain.Services;
-using PaymentFlow.Infrastructure;
-using PaymentFlow.Infrastructure.Repositories;
+using PaymentFlow.Api;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Configuração do banco de dados Oracle
-builder.Services.AddDbContext<PaymentDbContext>(options =>
-    options.UseOracle(builder.Configuration.GetConnectionString("OracleDb")));
-
-// Configuração do OAuth 2.0
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = builder.Configuration["Jwt:Authority"];
-        options.Audience = builder.Configuration["Jwt:Audience"];
-    });
-
-// Dependências
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+public class Program
 {
-    app.UseDeveloperExceptionPage();
+    public static void Main(string[] args)
+    {
+        CreateHostBuilder(args).Build().Run();
+    }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureLogging(logging =>
+            {
+                logging.ClearProviders();
+                logging.AddConsole();
+                logging.AddDebug();
+            })
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+            });
 }
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
