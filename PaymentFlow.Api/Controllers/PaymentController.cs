@@ -1,12 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PaymentFlow.Domain.Entities;
+﻿using Microsoft.AspNetCore.Mvc;
 using PaymentFlow.Domain.Models.Request;
 using PaymentFlow.Domain.Services;
 
 namespace PaymentFlow.Api.Controllers;
 
-[Authorize]
+//[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
@@ -16,7 +14,7 @@ public class PaymentsController : ControllerBase
 
     public PaymentsController
     (
-        IPaymentService paymentService, 
+        IPaymentService paymentService,
         ILogger<PaymentsController> logger
     )
     {
@@ -25,7 +23,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize] // Garante que só usuários autenticados possam criar pagamentos
+    //[Authorize] // Garante que só usuários autenticados possam criar pagamentos
     public async Task<IActionResult> AddPaymentAsync([FromBody] PaymentRequest paymentRequest)
     {
         if (paymentRequest.Amount <= 0 || (paymentRequest.Type != "Debito" && paymentRequest.Type != "Credito"))
@@ -34,8 +32,25 @@ public class PaymentsController : ControllerBase
             return BadRequest("Tipo de pagamento inválido ou valor menor que zero.");
         }
 
-        var paymentResponse = await _paymentService.AddPaymentAsync(paymentRequest);
+        await _paymentService.AddPaymentAsync(paymentRequest);
 
-        return Ok(new { Message = "Pagamento realizado com sucesso!", paymentResponse });
+        return Ok(new { Message = "Pagamento realizado com sucesso!" });
+    }
+
+    /// <summary>
+    /// Método para Busca dos pagamentos recebidos no dia
+    /// </summary>
+    /// <param name="dailyDate"></param>
+    /// <returns></returns>
+    [HttpGet("GetPaymentsByDailyDateAsync")]
+    public async Task<IActionResult> GetPaymentsByDailyDateAsync(DateTime dailyDate)
+    {
+        var paymentResponses = await _paymentService.GetPaymentsByDailyDateAsync(dailyDate);
+        if (paymentResponses == null)
+        {
+            _logger.LogWarning($"Nenhum pagamento encontrado para a data: {dailyDate}");
+            return NotFound("Nenhum pagamento encontrado para a data informada.");
+        }
+        return Ok(paymentResponses);
     }
 }

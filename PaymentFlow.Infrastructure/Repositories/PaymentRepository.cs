@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PaymentFlow.Domain.Entities;
 using PaymentFlow.Domain.Repositories;
 
@@ -10,23 +12,47 @@ public class PaymentRepository : IPaymentRepository
     private readonly ILogger<PaymentRepository> _logger;
     public PaymentRepository
     (
-        PaymentDbContext context, 
+        PaymentDbContext context,
         ILogger<PaymentRepository> logger
     )
     {
         _context = context;
         _logger = logger;
     }
-    public async Task<int> AddPaymentAsync(Payment payment)
+    public async Task AddPaymentAsync(Payment payment)
     {
-        _logger.LogInformation($"Inserindo pagamento de {payment.Amount} via {payment.Type}");
-        await _context.Payments.AddAsync(payment);
-        return await _context.SaveChangesAsync();
+        try
+        {
+            _logger.LogInformation($"Inserindo pagamento de {payment.Amount} via {payment.Type}");
+            await _context.Payments.AddAsync(payment);
+        }
+        catch (SqlException sqlex)
+        {
+            _logger.LogError($"Erro ao inserir pagamento - Message: {sqlex.Message}");
+            throw new Exception(sqlex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erro ao inserir pagamento - Message: {ex.Message}");
+            throw new Exception(ex.Message);
+        }
     }
-    public async Task<Payment?> GetPaymentByIdAsync(Guid id)
+
+    public async Task<IEnumerable<Payment>?> GetPaymentsByDailyDateAsync(DateTime dailyDate)
     {
-        _logger.LogInformation($"Buscando pagamento por ID: {id}");
-        return await _context.Payments.FindAsync(id);
+        try
+        {
+            _logger.LogInformation($"Buscando pagamentos consolidados do dia: {dailyDate}");
+            return await _context.Payments
+                                 .Where(x => x.CreatedAt.Date == dailyDate.Date)
+                                 .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Erro ao buscar pagamentos - Message: {ex.Message}");
+            throw new Exception(ex.Message);
+        }
+
     }
 }
 

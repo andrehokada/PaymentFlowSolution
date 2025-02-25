@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using PaymentFlow.Application.Services;
 using PaymentFlow.Domain.Repositories;
 using PaymentFlow.Domain.Services;
 using PaymentFlow.Infrastructure;
 using PaymentFlow.Infrastructure.Repositories;
 using System.Text;
-using Microsoft.OpenApi.Models;
 
 namespace PaymentFlow.Api
 {
@@ -46,15 +46,13 @@ namespace PaymentFlow.Api
                 });
             });
 
-            // Configuração do banco de dados Oracle
             services.AddDbContext<PaymentDbContext>(options =>
-                    options.UseOracle(Configuration["OracleDb"]));
+                options.UseSqlServer(Configuration.GetConnectionString("SqlServerDb")));
 
             // Dependências
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IPaymentRepository, PaymentRepository>();
-            services.AddScoped<IBalanceFinancialService, BalanceFinancialService>();
-            services.AddScoped<IBalanceFinancialRepository, BalanceFinancialRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddControllers();
 
@@ -75,8 +73,6 @@ namespace PaymentFlow.Api
                 });
 
             services.AddAuthorization();
-
-            
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

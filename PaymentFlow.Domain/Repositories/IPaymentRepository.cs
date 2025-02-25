@@ -4,6 +4,6 @@ namespace PaymentFlow.Domain.Repositories;
 
 public interface IPaymentRepository
 {
-    Task<int> AddPaymentAsync(Payment payment);
-    Task<Payment?> GetPaymentByIdAsync(Guid id);
+    Task AddPaymentAsync(Payment payment);
+    Task<IEnumerable<Payment>?> GetPaymentsByDailyDateAsync(DateTime dailyDate);
 }

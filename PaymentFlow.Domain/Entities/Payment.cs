@@ -1,24 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PaymentFlow.Domain.Entities
+﻿namespace PaymentFlow.Domain.Entities
 {
     public class Payment
     {
-        public Guid Id { get; }
-        public decimal Amount { get; }
-        public string Type { get; } // "Debito" ou "Credito"
-        public DateTime CreatedAt { get; }
-
-        public Payment(decimal amount, string type)
+        public Payment
+        (
+            decimal amount,
+            string type
+        )
         {
             Id = Guid.NewGuid();
             Amount = amount;
             Type = type;
             CreatedAt = DateTime.UtcNow;
         }
+
+        public Guid Id { get; private set; }
+        public decimal Amount { get; private set; }
+        public string Type { get; private set; }
+        public DateTime CreatedAt { get; private set; }
+
+
     }
 }

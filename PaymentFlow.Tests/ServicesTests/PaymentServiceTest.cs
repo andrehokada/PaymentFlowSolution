@@ -1,43 +1,79 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using PaymentFlow.Application.Services;
 using PaymentFlow.Domain.Entities;
+using PaymentFlow.Domain.Models.Request;
 using PaymentFlow.Domain.Repositories;
-using PaymentFlow.Infrastructure;
-using PaymentFlow.Infrastructure.Repositories;
+using PaymentFlow.Domain.Services;
 
 public class PaymentServiceTest
 {
-    private readonly Mock<IPaymentRepository> _accountRepositoryMock;
+    private readonly Mock<IPaymentRepository> _paymentRepositoryMock;
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<ILogger<PaymentService>> _loggerMock;
+    private readonly PaymentService _paymentService;
 
     public PaymentServiceTest()
     {
-        _accountRepositoryMock = new Mock<IPaymentRepository>();
+        _paymentRepositoryMock = new Mock<IPaymentRepository>();
+        _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _loggerMock = new Mock<ILogger<PaymentService>>();
+        _paymentService = new PaymentService(_paymentRepositoryMock.Object, _unitOfWorkMock.Object, _loggerMock.Object);
     }
 
     [Fact]
-    public async Task AddPaymentAsync_ShouldInsertPayment()
+    public async Task AddPaymentAsync_ShouldInsertPayment_Success()
     {
-        var mockDbContext = new Mock<PaymentDbContext>();
-        var mockLogger = new Mock<ILogger<PaymentRepository>>();
-        var repository = new PaymentRepository(mockDbContext.Object, mockLogger.Object);
+        var paymentRequest = new PaymentRequest { Amount = 100.50m, Type = "Credito" };
 
-        var payment = new Payment(100.50m, "Credito");
+        await _paymentService.AddPaymentAsync(paymentRequest);
 
-        await repository.AddPaymentAsync(payment);
-
-        mockDbContext.Verify(db => db.Payments.AddAsync(payment, It.IsAny<CancellationToken>()), Times.Once);
-        mockDbContext.Verify(db => db.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _paymentRepositoryMock.Verify(repo => repo.AddPaymentAsync(It.IsAny<Payment>()), Times.Once);
+        _unitOfWorkMock.Verify(uow => uow.CommitAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task GetPaymentByIdAsync_ShouldReturnPayment()
+    public async Task AddPaymentAsync_ShouldLogError_WhenExceptionThrown()
     {
-        var mockDbContext = new Mock<PaymentDbContext>();
-        var mockLogger = new Mock<ILogger<PaymentRepository>>();
-        var repository = new PaymentRepository(mockDbContext.Object, mockLogger.Object);
+        var paymentRequest = new PaymentRequest { Amount = 100.50m, Type = "Credito" };
+        _paymentRepositoryMock.Setup(repo => repo.AddPaymentAsync(It.IsAny<Payment>())).ThrowsAsync(new Exception("Database error"));
 
-        var payment = await repository.GetPaymentByIdAsync(Guid.NewGuid());
+        await Assert.ThrowsAsync<Exception>(() => _paymentService.AddPaymentAsync(paymentRequest));
 
-        Assert.NotNull(payment);
+        _loggerMock.Verify(logger => logger.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Database error")),
+            It.IsAny<Exception>(),
+            It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPaymentsByDailyDateAsync_ShouldReturnPayments_Success()
+    {
+        var dailyDate = DateTime.Now;
+        var payments = new List<Payment>
+        {
+            new Payment(100.50m, "Credito"),
+            new Payment(200.75m, "Debito")
+        };
+        _paymentRepositoryMock.Setup(repo => repo.GetPaymentsByDailyDateAsync(dailyDate)).ReturnsAsync(payments);
+
+        var result = await _paymentService.GetPaymentsByDailyDateAsync(dailyDate);
+
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal(301.25m, result.First().TotalCurrencyDaily);
+    }
+
+    [Fact]
+    public async Task GetPaymentsByDailyDateAsync_ShouldReturnEmpty_WhenNoPaymentsFound()
+    {
+        var dailyDate = DateTime.Now;
+        _paymentRepositoryMock.Setup(repo => repo.GetPaymentsByDailyDateAsync(dailyDate)).ReturnsAsync((IEnumerable<Payment>?)null);
+
+        var result = await _paymentService.GetPaymentsByDailyDateAsync(dailyDate);
+
+        Assert.Empty(result);
     }
 }
