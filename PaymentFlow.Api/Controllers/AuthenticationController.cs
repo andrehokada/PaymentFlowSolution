@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,24 +12,22 @@ namespace PaymentFlow.Api.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        [HttpPost("token")]
-        public IActionResult GenerateToken()
+        private readonly IConfiguration _configuration;
+
+        public AuthenticationController(IConfiguration configuration)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("secret_key"));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var claims = new[]
+            _configuration = configuration;
+        }
+
+        [HttpPost("token")]
+        public IActionResult GenerateToken([FromBody] LoginRequest request)
+        {
+            if (request.Email == "admin@gmail.com" && request.Password == "password")
             {
-               new Claim(JwtRegisteredClaimNames.Sub, "user"),
-               new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-           };
-            var token = new JwtSecurityToken(
-                issuer: "issuer",
-                audience: "audience",
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: credentials
-            );
-            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+                var token = new AuthExtensions(_configuration).GenerateToken(request.Email);
+                return Ok(new { token });
+            }
+            return Unauthorized();
         }
     }
 }

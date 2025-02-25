@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PaymentFlow.Domain.Models.Request;
 using PaymentFlow.Domain.Services;
 
 namespace PaymentFlow.Api.Controllers;
 
-//[Authorize]
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
@@ -23,7 +24,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpPost]
-    //[Authorize] // Garante que só usuários autenticados possam criar pagamentos
+    [Authorize] // Garante que só usuários autenticados possam criar pagamentos
     public async Task<IActionResult> AddPaymentAsync([FromBody] PaymentRequest paymentRequest)
     {
         if (paymentRequest.Amount <= 0 || (paymentRequest.Type != "Debito" && paymentRequest.Type != "Credito"))
@@ -43,6 +44,7 @@ public class PaymentsController : ControllerBase
     /// <param name="dailyDate"></param>
     /// <returns></returns>
     [HttpGet("GetPaymentsByDailyDateAsync")]
+    [Authorize] // Garante que só usuários autenticados possam buscar pagamentos
     public async Task<IActionResult> GetPaymentsByDailyDateAsync(DateTime dailyDate)
     {
         var paymentResponses = await _paymentService.GetPaymentsByDailyDateAsync(dailyDate);
